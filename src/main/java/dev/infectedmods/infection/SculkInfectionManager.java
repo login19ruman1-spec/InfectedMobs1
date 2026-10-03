@@ -74,14 +74,15 @@ public final class SculkInfectionManager {
         entity.getWorld().spawnParticle(Particle.SCULK_CHARGE, l, 1, .15, .05, .15, .01);
     }
 
-    public void emerge(Player player) {
+    public void tryEmerge(Player player) {
         int radius = config.i("sculk.infection.emerge-range", 8);
         Block source = InfectedUtil.randomNearbyBlock(player.getLocation(), radius,
                 Material.SCULK, Material.SCULK_VEIN, Material.SCULK_CATALYST);
         if (source == null) return;
         if (ThreadLocalRandom.current().nextDouble() >= config.d("sculk.infection.emerge-chance", .03)) return;
 
-        Location spawn = source.getLocation().add(.5, 1.0, .5);
+        Location spawn = findSpawnLocation(source);
+        if (spawn == null) return;
         EntityType type = switch (ThreadLocalRandom.current().nextInt(3)) {
             case 0 -> EntityType.ZOMBIE;
             case 1 -> EntityType.SKELETON;
@@ -108,4 +109,16 @@ public final class SculkInfectionManager {
             }
         }.runTaskTimer(plugin, 1L, 1L);
     }
+    private Location findSpawnLocation(Block source) {
+        var world = source.getWorld();
+        int x = source.getX();
+        int z = source.getZ();
+        for (int dy = 1; dy <= 5; dy++) {
+            Location feet = new Location(world, x + 0.5, source.getY() + dy, z + 0.5);
+            if (world.getBlockAt(x, source.getY() + dy, z).isPassable()
+                    && world.getBlockAt(x, source.getY() + dy + 1, z).isPassable()) return feet;
+        }
+        return null;
+    }
+
 }

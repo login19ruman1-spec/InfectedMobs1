@@ -8,7 +8,6 @@ import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.Particle;
 
 public final class MossInfectionManager {
     private final JavaPlugin plugin;

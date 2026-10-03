@@ -32,7 +32,6 @@ moss:
 
 models:
   use-fmm: true
-  skulk-creeper: "sculk_infected_creeper"
   sculk-zombie: "sculk_infected_zombie"
   sculk-skeleton: "sculk_infected_skeleton"
   sculk-spider: "sculk_infected_spider"

@@ -6,3 +6,12 @@ author: InfectedMobs
 description: Sculk and moss infected hostile mobs.
 depend:
   - FreeMinecraftModels
+
+commands:
+  infectedmobs:
+    description: Admin testing and diagnostics for InfectedMobs
+    usage: /infectedmobs <spawn|info|help>
+    permission: infectedmobs.admin
+permissions:
+  infectedmobs.admin:
+    default: op

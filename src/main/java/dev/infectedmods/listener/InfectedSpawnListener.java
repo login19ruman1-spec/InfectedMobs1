@@ -31,7 +31,7 @@ public final class InfectedSpawnListener implements Listener {
         this.plugin = plugin; this.config = config; this.sculk = sculk; this.moss = moss; this.effects = effects;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSpawn(CreatureSpawnEvent event) {
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
         LivingEntity e = event.getEntity();
@@ -51,7 +51,12 @@ public final class InfectedSpawnListener implements Listener {
         LivingEntity dead = event.getEntity();
 
         if (InfectedUtil.is(dead, plugin, "sculk")) {
+            plugin.models().remove(dead);
             sculk.deathVisual(dead);
+            return;
+        }
+        if (InfectedUtil.is(dead, plugin, "moss")) {
+            plugin.models().remove(dead);
             return;
         }
         if (!(dead.getKiller() instanceof Player)) return;

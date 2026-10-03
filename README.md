@@ -13,7 +13,7 @@ FMM currently documents Java 21 and Paper/Spigot 1.21.4+, and exposes `DynamicEn
 
 ## Models
 
-Put these into `plugins/FreeMinecraftModels/models/`:
+Put the loose `.bbmodel` files into `plugins/FreeMinecraftModels/imports/` for conversion. After `/fmm reload`, FMM creates/uses the active `.fmmodel` files under `plugins/FreeMinecraftModels/models/`.
 
 - `sculk_infected_zombie`
 - `sculk_infected_skeleton`
@@ -111,8 +111,9 @@ The behavior loop runs once per second. Sculk emergence uses the configured 100-
 
 1. Build and paint each model in Blockbench.
 2. Save/export `.bbmodel`.
-3. Copy it to `plugins/FreeMinecraftModels/models/`.
+3. Copy the `.bbmodel` to `plugins/FreeMinecraftModels/imports/`.
 4. Run `/fmm reload`.
+5. Make sure the client receives `plugins/FreeMinecraftModels/output/FreeMinecraftModels.zip`.
 5. Make sure the model ID matches `config.yml`.
 6. Run InfectedMobs.
 
@@ -129,3 +130,18 @@ The behavior loop runs once per second. Sculk emergence uses the configured 100-
 - `config.yml`
 - `plugin.yml`
 - `.github/workflows/build.yml`
+
+## IMPORTANT: first test
+
+After installing both JARs and starting the server:
+
+1. Put `sculk_infected_zombie.bbmodel` into `plugins/FreeMinecraftModels/imports/`.
+2. Run `/fmm reload`.
+3. Check `/fmm stats` and the console for import errors.
+4. Make sure your client has accepted the generated resource pack. FMM generates it at `plugins/FreeMinecraftModels/output/FreeMinecraftModels.zip`.
+5. Run `/infectedmobs spawn sculk_zombie`.
+6. Run `/infectedmobs info`.
+
+If the command spawns a normal zombie but the model is not visible, the infection plugin is working and the problem is FMM model loading/resource-pack delivery. If `/infectedmobs spawn sculk_zombie` says the model is not loaded, fix the FMM import first.
+
+FMM's current documentation states that loose `.bbmodel` files belong in `imports/`, `/fmm reload` converts them, and the generated resource pack must actually be delivered to clients. It also states that `DynamicEntity.create(...)` returns null when the model ID is not loaded.

@@ -1,0 +1,17 @@
+name: InfectedMobs
+version: ${version}
+main: dev.infectedmobs.InfectedMobsPlugin
+api-version: '1.21.4'
+author: InfectedMobs
+description: Sculk and moss infected hostile mobs.
+depend:
+  - FreeMinecraftModels
+
+commands:
+  infectedmobs:
+    description: Admin testing and diagnostics for InfectedMobs
+    usage: /infectedmobs <spawn|info|help>
+    permission: infectedmobs.admin
+permissions:
+  infectedmobs.admin:
+    default: op

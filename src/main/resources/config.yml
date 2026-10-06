@@ -1,0 +1,94 @@
+sculk:
+  infection:
+    radius: 16
+    spawn-chance: 0.10
+    emerge-chance: 0.03
+    emerge-interval-ticks: 100
+    emerge-range: 8
+    hp-multiplier: 1.5
+    speed-multiplier: 1.2
+    damage-multiplier: 1.3
+  effect:
+    duration-ticks: 200
+    damage-per-tick: 1.0
+    max-stacks: 3
+    tick-interval: 40
+
+moss:
+  infection:
+    radius: 8
+    revive-chance: 0.15
+    hp-multiplier: 1.3
+    speed-multiplier: 1.1
+  day:
+    frozen: true
+    can-be-killed: true
+  night:
+    active: true
+    effect:
+      slowness-level: 1
+      blindness-level: 0
+      duration-ticks: 60
+
+combat:
+  melee-effect-distance: 3.25
+  ranged-effect-distance: 24.0
+
+models:
+  use-fmm: true
+  sculk-zombie: "sculk_infected_zombie"
+  sculk-skeleton: "sculk_infected_skeleton"
+  sculk-spider: "sculk_infected_spider"
+  sculk-creeper: "sculk_infected_creeper"
+  moss-zombie: "moss_infected_zombie"
+  moss-skeleton: "moss_infected_skeleton"
+  moss-creeper: "moss_infected_creeper"
+
+# Animation contract used by InfectedMobs.
+# spawn is optional. FMM automatically handles idle <-> walk for DynamicEntity models.
+# attack/death are triggered by the plugin. Names are case-sensitive in the model file.
+animations:
+  sculk-zombie:
+    spawn: "spawn"
+    idle: "idle"
+    walk: "walk"
+    attack: "attack"
+    death: "death"
+  sculk-skeleton:
+    spawn: "spawn"
+    idle: "idle"
+    walk: "walk"
+    attack: "attack"
+    ranged-attack: "attack_ranged"
+    death: "death"
+  sculk-spider:
+    spawn: "spawn"
+    idle: "idle"
+    walk: "walk"
+    attack: "attack"
+    death: "death"
+  sculk-creeper:
+    spawn: "spawn"
+    idle: "idle"
+    walk: "walk"
+    attack: "attack"
+    death: "death"
+  moss-zombie:
+    spawn: "spawn"
+    idle: "idle"
+    walk: "walk"
+    attack: "attack"
+    death: "death"
+  moss-skeleton:
+    spawn: "spawn"
+    idle: "idle"
+    walk: "walk"
+    attack: "attack"
+    ranged-attack: "attack_ranged"
+    death: "death"
+  moss-creeper:
+    spawn: "spawn"
+    idle: "idle"
+    walk: "walk"
+    attack: "attack"
+    death: "death"

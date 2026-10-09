@@ -4,6 +4,7 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -30,3 +31,4 @@ jobs:
           name: InfectedMobs-${{ github.sha }}
           path: build/libs/InfectedMobs-*.jar
           if-no-files-found: error
+

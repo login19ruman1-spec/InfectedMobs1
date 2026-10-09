@@ -2,26 +2,36 @@ package dev.infectedmobs.infection;
 
 import dev.infectedmobs.config.ConfigManager;
 import dev.infectedmobs.effect.CustomEffectManager;
-import dev.infectedmobs.model.ModelManager;
+import dev.infectedmobs.mob.MobDefinition;
+import dev.infectedmobs.mob.MobRegistry;
+import dev.infectedmobs.track.InfectedTracker;
 import dev.infectedmobs.util.InfectedUtil;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.*;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MossInfectionManager {
     private final JavaPlugin plugin;
     private final ConfigManager config;
-    private final ModelManager models;
+    private final MobRegistry registry;
+    private final InfectedTracker tracker;
     private final CustomEffectManager effects;
 
-    public MossInfectionManager(JavaPlugin plugin, ConfigManager config, ModelManager models, CustomEffectManager effects) {
-        this.plugin = plugin; this.config = config; this.models = models; this.effects = effects;
+    public MossInfectionManager(JavaPlugin plugin, ConfigManager config, MobRegistry registry,
+                                InfectedTracker tracker, CustomEffectManager effects) {
+        this.plugin = plugin;
+        this.config = config;
+        this.registry = registry;
+        this.tracker = tracker;
+        this.effects = effects;
     }
 
-    public boolean canConvert(Entity e) {
-        return e instanceof Zombie || e instanceof Skeleton || e instanceof Creeper;
+    /** Revive candidate for a killed mob of this type, or null if none is configured. */
+    public MobDefinition reviveDefinition(LivingEntity dead) {
+        return registry.pick(dead.getType(), "moss", MobDefinition::revive);
     }
 
     public boolean nearMoss(LivingEntity e) {
@@ -29,30 +39,25 @@ public final class MossInfectionManager {
                 Material.MOSS_BLOCK, Material.MOSS_CARPET, Material.AZALEA, Material.FLOWERING_AZALEA);
     }
 
-    public void convert(LivingEntity entity, String source, boolean halfHealth) {
-        if (!canConvert(entity) || InfectedUtil.isInfected(entity, plugin)) return;
-        InfectedUtil.mark(entity, plugin, "moss", source);
+    public void convert(LivingEntity entity, MobDefinition def, String source, boolean halfHealth) {
+        if (def == null || InfectedUtil.isInfected(entity, plugin)) return;
+        InfectedUtil.mark(entity, plugin, "moss", source, def.id());
+
+        double hpMul = def.hpMultiplier() != null ? def.hpMultiplier() : config.d("moss.infection.hp-multiplier", 1.3);
+        double speedMul = def.speedMultiplier() != null ? def.speedMultiplier() : config.d("moss.infection.speed-multiplier", 1.1);
 
         var max = entity.getAttribute(Attribute.MAX_HEALTH);
-        if (max != null) max.setBaseValue(max.getBaseValue() * config.d("moss.infection.hp-multiplier", 1.3));
+        if (max != null) max.setBaseValue(max.getBaseValue() * hpMul);
         var speed = entity.getAttribute(Attribute.MOVEMENT_SPEED);
-        if (speed != null) speed.setBaseValue(speed.getBaseValue() * config.d("moss.infection.speed-multiplier", 1.1));
+        if (speed != null) speed.setBaseValue(speed.getBaseValue() * speedMul);
 
         if (halfHealth) entity.setHealth(Math.max(1.0, max != null ? max.getValue() / 2.0 : entity.getHealth() / 2.0));
         else if (max != null) entity.setHealth(max.getValue());
 
-        models.attach(entity, modelFor(entity));
         if (InfectedUtil.isDay(entity.getWorld().getTime())) freeze(entity);
         else activate(entity);
-    }
 
-    public String modelFor(LivingEntity e) {
-        return switch (e.getType()) {
-            case ZOMBIE -> config.s("models.moss-zombie", "moss_infected_zombie");
-            case SKELETON -> config.s("models.moss-skeleton", "moss_infected_skeleton");
-            case CREEPER -> config.s("models.moss-creeper", "moss_infected_creeper");
-            default -> null;
-        };
+        plugin.getServer().getScheduler().runTask(plugin, () -> tracker.track(entity));
     }
 
     public void freeze(LivingEntity e) {
@@ -75,3 +80,4 @@ public final class MossInfectionManager {
                 3, .35, .5, .35, Material.MOSS_BLOCK.createBlockData());
     }
 }
+

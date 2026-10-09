@@ -2,62 +2,67 @@ package dev.infectedmobs.infection;
 
 import dev.infectedmobs.config.ConfigManager;
 import dev.infectedmobs.effect.CustomEffectManager;
-import dev.infectedmobs.model.ModelManager;
+import dev.infectedmobs.mob.MobDefinition;
+import dev.infectedmobs.mob.MobRegistry;
+import dev.infectedmobs.track.InfectedTracker;
 import dev.infectedmobs.util.InfectedUtil;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
-import org.bukkit.Material;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Vector;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class SculkInfectionManager {
     private final JavaPlugin plugin;
     private final ConfigManager config;
-    private final ModelManager models;
+    private final MobRegistry registry;
+    private final InfectedTracker tracker;
     private final CustomEffectManager effects;
 
-    public SculkInfectionManager(JavaPlugin plugin, ConfigManager config, ModelManager models, CustomEffectManager effects) {
-        this.plugin = plugin; this.config = config; this.models = models; this.effects = effects;
+    public SculkInfectionManager(JavaPlugin plugin, ConfigManager config, MobRegistry registry,
+                                 InfectedTracker tracker, CustomEffectManager effects) {
+        this.plugin = plugin;
+        this.config = config;
+        this.registry = registry;
+        this.tracker = tracker;
+        this.effects = effects;
     }
 
-    public boolean canConvert(Entity entity) {
-        return entity instanceof Zombie || entity instanceof Skeleton ||
-                entity instanceof Spider || entity instanceof Creeper;
+    /** Natural-spawn candidate for this entity type, or null if none is configured. */
+    public MobDefinition naturalDefinition(Entity entity) {
+        return registry.pick(entity.getType(), "sculk", MobDefinition::natural);
     }
 
-    public void convert(LivingEntity entity, String source) {
-        if (!canConvert(entity) || InfectedUtil.isInfected(entity, plugin)) return;
-        InfectedUtil.mark(entity, plugin, "sculk", source);
-        double hp = entity.getAttribute(Attribute.MAX_HEALTH) != null
-                ? entity.getAttribute(Attribute.MAX_HEALTH).getValue() : 20.0;
-        setAttribute(entity, Attribute.MAX_HEALTH, config.d("sculk.infection.hp-multiplier", 1.5), hp);
-        setAttribute(entity, Attribute.MOVEMENT_SPEED, config.d("sculk.infection.speed-multiplier", 1.2), 0);
-        setAttribute(entity, Attribute.ATTACK_DAMAGE, config.d("sculk.infection.damage-multiplier", 1.3), 0);
-        entity.setHealth(Math.min(entity.getHealth() * config.d("sculk.infection.hp-multiplier", 1.5),
-                entity.getAttribute(Attribute.MAX_HEALTH).getValue()));
-        models.attach(entity, modelFor(entity));
+    public void convert(LivingEntity entity, MobDefinition def, String source) {
+        if (def == null || InfectedUtil.isInfected(entity, plugin)) return;
+        InfectedUtil.mark(entity, plugin, "sculk", source, def.id());
+
+        double hpMul = def.hpMultiplier() != null ? def.hpMultiplier() : config.d("sculk.infection.hp-multiplier", 1.5);
+        double speedMul = def.speedMultiplier() != null ? def.speedMultiplier() : config.d("sculk.infection.speed-multiplier", 1.2);
+        double dmgMul = def.damageMultiplier() != null ? def.damageMultiplier() : config.d("sculk.infection.damage-multiplier", 1.3);
+
+        multiply(entity, Attribute.MAX_HEALTH, hpMul);
+        multiply(entity, Attribute.MOVEMENT_SPEED, speedMul);
+        multiply(entity, Attribute.ATTACK_DAMAGE, dmgMul);
+        var max = entity.getAttribute(Attribute.MAX_HEALTH);
+        if (max != null) entity.setHealth(Math.min(entity.getHealth() * hpMul, max.getValue()));
+
+        // The entity may not be "valid" yet (CreatureSpawnEvent). Start tracking one tick later;
+        // the behaviour task then attaches the model as soon as the entity is in the world.
+        plugin.getServer().getScheduler().runTask(plugin, () -> tracker.track(entity));
     }
 
-    private void setAttribute(LivingEntity e, Attribute attr, double multiplier, double ignored) {
+    private void multiply(LivingEntity e, Attribute attr, double multiplier) {
         var a = e.getAttribute(attr);
-        if (a == null) return;
+        if (a == null) return; // not every mob has every attribute (skeletons have no attack damage)
         a.setBaseValue(a.getBaseValue() * multiplier);
-    }
-
-    public String modelFor(LivingEntity e) {
-        return switch (e.getType()) {
-            case ZOMBIE -> config.s("models.sculk-zombie", "sculk_infected_zombie");
-            case SKELETON -> config.s("models.sculk-skeleton", "sculk_infected_skeleton");
-            case SPIDER -> config.s("models.sculk-spider", "sculk_infected_spider");
-            case CREEPER -> config.s("models.sculk-creeper", "sculk_infected_creeper");
-            default -> null;
-        };
     }
 
     public void attackPlayer(Player player) {
@@ -82,16 +87,14 @@ public final class SculkInfectionManager {
         if (source == null) return;
         if (ThreadLocalRandom.current().nextDouble() >= config.d("sculk.infection.emerge-chance", .03)) return;
 
+        MobDefinition def = registry.pick(null, "sculk", MobDefinition::emerge);
+        if (def == null) return;
+
         Location spawn = findSpawnLocation(source);
         if (spawn == null) return;
-        EntityType type = switch (ThreadLocalRandom.current().nextInt(3)) {
-            case 0 -> EntityType.ZOMBIE;
-            case 1 -> EntityType.SKELETON;
-            default -> EntityType.SPIDER;
-        };
-        Entity raw = source.getWorld().spawnEntity(spawn, type);
-        if (!(raw instanceof LivingEntity mob)) return;
-        convert(mob, "emerged");
+        Entity raw = source.getWorld().spawnEntity(spawn, def.entity());
+        if (!(raw instanceof LivingEntity mob)) { raw.remove(); return; }
+        convert(mob, def, "emerged");
 
         source.getWorld().spawnParticle(Particle.SCULK_CHARGE, spawn, 30, .5, .7, .5, .05);
         source.getWorld().playSound(spawn, Sound.BLOCK_SCULK_PLACE, 1f, .7f);
@@ -106,6 +109,7 @@ public final class SculkInfectionManager {
             }
         }.runTaskTimer(plugin, 1L, 1L);
     }
+
     private Location findSpawnLocation(Block source) {
         var world = source.getWorld();
         int x = source.getX();
@@ -117,5 +121,5 @@ public final class SculkInfectionManager {
         }
         return null;
     }
-
 }
+

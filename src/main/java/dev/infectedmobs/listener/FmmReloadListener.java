@@ -12,6 +12,7 @@ public final class FmmReloadListener implements Listener {
     @EventHandler
     public void onFmmReload(FmmReloadedEvent event) {
         plugin.getLogger().info("FMM reload completed; reattaching infected mob models...");
-        plugin.models().reattachAll();
+        plugin.reattachAll();
     }
 }
+

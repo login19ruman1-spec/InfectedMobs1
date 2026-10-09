@@ -1,3 +1,8 @@
+# ======================================================================================
+#  InfectedMobs config
+#  After editing: /infectedmobs reload   (no server restart needed)
+# ======================================================================================
+
 sculk:
   infection:
     radius: 16
@@ -36,73 +41,117 @@ combat:
 
 models:
   use-fmm: true
-  sculk-zombie: "sculk_infected_zombie"
-  sculk-skeleton: "sculk_infected_skeleton"
-  sculk-spider: "sculk_infected_spider"
-  sculk-creeper: "sculk_infected_creeper"
-  moss-zombie: "moss_infected_zombie"
-  moss-skeleton: "moss_infected_skeleton"
-  moss-creeper: "moss_infected_creeper"
 
-# Animation contract used by InfectedMobs.
-# spawn is optional. InfectedMobs explicitly controls idle <-> walk so the model cannot get stuck in idle.
-# attack/death are triggered by the plugin. Names are case-sensitive in the model file.
-animations:
-  sculk-zombie:
-    spawn: "spawn"
-    idle: "idle"
-    walk: "walk"
-    attack: "attack"
-    death: "death"
-    spawn-lock-ticks: 12
+# ======================================================================================
+#  MOBS - the list of infected mobs. ADD YOUR OWN HERE, no code changes needed.
+#
+#  <id>:                       any name you like (used by /infectedmobs spawn <id>)
+#    entity: ZOMBIE            REQUIRED. Any living Bukkit EntityType: ZOMBIE, HUSK, DROWNED, STRAY, BOGGED,
+#                              CAVE_SPIDER, ENDERMAN, PILLAGER, WITCH, PIGLIN, IRON_GOLEM, ...
+#    infection: sculk          REQUIRED. sculk | moss  (decides the behaviour and the effect on players)
+#    model: my_model_name      REQUIRED. .bbmodel file name WITHOUT extension (FMM model id)
+#    enabled: true             optional. false = ignore this entry
+#
+#    # --- how it appears (all optional) ---
+#    natural: true             sculk: may replace a naturally spawned mob of this entity type
+#    emerge: true              sculk: may "crawl out" of sculk blocks near players at night
+#    revive: true              moss: may be revived from a mob of this entity type killed near moss
+#    weight: 1.0               if several entries share the same entity+infection, the chance is proportional to this
+#    hp-multiplier: 1.5        optional per-mob overrides of the sculk./moss.infection values above
+#    speed-multiplier: 1.2
+#    damage-multiplier: 1.3
+#    melee-range: 3.25         max real distance of a melee hit that is allowed to hurt / infect
+#
+#    # --- animations (all optional; defaults shown) ---
+#    # Names are the animation names inside your Blockbench model (case-sensitive).
+#    # A value can be one name or a list: the first one that exists in the model is used.
+#    # Missing animations are skipped (walk falls back to idle, attack_ranged falls back to attack).
+#    # "death" cannot be renamed: the animation in the model must be called  death.
+#    animations:
+#      spawn: spawn            plays once when the model appears (optional animation)
+#      idle: idle              loops while standing
+#      walk: walk              loops while moving
+#      attack: attack          one-shot melee attack
+#      ranged-attack: [attack_ranged, ranged_attack]   one-shot, when the mob shoots a projectile
+#      hurt: hurt              one-shot when damaged (optional animation)
+#    spawn-lock-ticks: 12      how long the spawn animation owns the model (20 ticks = 1 s)
+#    attack-lock-ticks: 14     how long an attack animation owns the model - set this to the animation length
+#    hurt-lock-ticks: 6
+#
+#    # --- advanced (optional) ---
+#    attack-trigger: damage    damage = play "attack" when the mob hits something (default)
+#                              proximity = play "attack" when its target is within attack-trigger-range
+#                              (use for creepers and other mobs that never "hit")
+#    attack-trigger-range: 3.0
+#    projectile-origin:        move arrows/bolts/fireballs shot by this mob to a point relative to the mob
+#      right: 0.35               (blocks) to the mob's right
+#      up: 1.0                   (blocks) above its feet
+#      forward: 0.0              (blocks) in front of it
+#
+#  Several entries may use the same entity type, e.g. sculk_zombie and sculk_zombie_brute (both ZOMBIE)
+#  with different models - which one appears is random, weighted by `weight`.
+# ======================================================================================
+mobs:
+  sculk_zombie:
+    entity: ZOMBIE
+    infection: sculk
+    model: sculk_infected_zombie
     attack-lock-ticks: 14
-  sculk-skeleton:
-    spawn: "spawn"
-    idle: "idle"
-    walk: "walk"
-    attack: "attack"
-    ranged-attack: "attack_ranged"
-    death: "death"
-    spawn-lock-ticks: 12
+
+  sculk_skeleton:
+    entity: SKELETON
+    infection: sculk
+    model: sculk_infected_skeleton
     attack-lock-ticks: 15
-  sculk-spider:
-    spawn: "spawn"
-    idle: "idle"
-    walk: "walk"
-    attack: "attack"
-    death: "death"
-    spawn-lock-ticks: 12
+    projectile-origin:
+      right: 0.35
+      up: 1.0
+      forward: 0.0
+
+  sculk_spider:
+    entity: SPIDER
+    infection: sculk
+    model: sculk_infected_spider
     attack-lock-ticks: 14
-  sculk-creeper:
-    spawn: "spawn"
-    idle: "idle"
-    walk: "walk"
-    attack: "attack"
-    death: "death"
-    spawn-lock-ticks: 12
+
+  sculk_creeper:
+    entity: CREEPER
+    infection: sculk
+    model: sculk_infected_creeper
+    attack-trigger: proximity
+    attack-trigger-range: 3.0
     attack-lock-ticks: 24
-  moss-zombie:
-    spawn: "spawn"
-    idle: "idle"
-    walk: "walk"
-    attack: "attack"
-    death: "death"
-    spawn-lock-ticks: 12
+
+  moss_zombie:
+    entity: ZOMBIE
+    infection: moss
+    model: moss_infected_zombie
     attack-lock-ticks: 14
-  moss-skeleton:
-    spawn: "spawn"
-    idle: "idle"
-    walk: "walk"
-    attack: "attack"
-    ranged-attack: "attack_ranged"
-    death: "death"
-    spawn-lock-ticks: 12
+
+  moss_skeleton:
+    entity: SKELETON
+    infection: moss
+    model: moss_infected_skeleton
     attack-lock-ticks: 15
-  moss-creeper:
-    spawn: "spawn"
-    idle: "idle"
-    walk: "walk"
-    attack: "attack"
-    death: "death"
-    spawn-lock-ticks: 12
+    projectile-origin:
+      right: 0.35
+      up: 1.0
+      forward: 0.0
+
+  moss_creeper:
+    entity: CREEPER
+    infection: moss
+    model: moss_infected_creeper
+    attack-trigger: proximity
+    attack-trigger-range: 3.0
     attack-lock-ticks: 24
+
+  # ---- Example of a NEW mob (copy, change, remove "enabled: false"). Needs husk_sculk.bbmodel in FMM. ----
+  sculk_husk_example:
+    enabled: false
+    entity: HUSK
+    infection: sculk
+    model: husk_sculk
+    animations:
+      attack: [attack, attack_melee]
+    attack-lock-ticks: 12

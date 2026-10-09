@@ -79,3 +79,4 @@ public final class InfectedInteractionListener implements Listener {
                 < blockDistance * blockDistance;
     }
 }
+

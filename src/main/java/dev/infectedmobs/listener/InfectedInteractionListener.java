@@ -1,4 +1,4 @@
- package dev.infectedmobs.listener;
+package dev.infectedmobs.listener;
 
 import dev.infectedmobs.InfectedMobsPlugin;
 import dev.infectedmobs.util.InfectedUtil;

@@ -17,10 +17,17 @@ public final class InfectedUtil {
         return new NamespacedKey(plugin, name);
     }
 
-    public static void mark(LivingEntity entity, JavaPlugin plugin, String type, String source) {
+    public static void mark(LivingEntity entity, JavaPlugin plugin, String type, String source, String mobId) {
         PersistentDataContainer pdc = entity.getPersistentDataContainer();
         pdc.set(key(plugin, "infected_type"), PersistentDataType.STRING, type);
         pdc.set(key(plugin, "infection_source"), PersistentDataType.STRING, source);
+        pdc.set(key(plugin, "infected_mob"), PersistentDataType.STRING, mobId);
+    }
+
+    /** Id of the config entry (mobs.<id>) this entity was created from; null for very old entities. */
+    public static String mobId(LivingEntity entity, JavaPlugin plugin) {
+        return entity.getPersistentDataContainer().get(
+                key(plugin, "infected_mob"), PersistentDataType.STRING);
     }
 
     public static String type(LivingEntity entity, JavaPlugin plugin) {

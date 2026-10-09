@@ -140,3 +140,4 @@ public final class CustomEffectManager {
         originalWalkSpeed.clear();
     }
 }
+

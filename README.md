@@ -1,100 +1,79 @@
-# InfectedMobs — Paper 1.21.4+
+# InfectedMobs — Paper 1.21.4 / Java 21
 
-Plugin for Paper 1.21.4+ / Java 21 with Sculk and Moss infected hostile mobs. FreeMinecraftModels (FMM) is a required server plugin and is used only at runtime (`compileOnly`).
+Заражённые мобы (sculk и moss) с кастомными моделями FreeMinecraftModels (FMM).
+Модели и анимации ты рисуешь в Blockbench, а **список мобов целиком задаётся в `config.yml`** — новый моб добавляется без правки кода.
 
-## Included in this revision
+## Как добавить нового моба (3 шага)
 
-- Sculk infection for zombie, skeleton, spider and creeper.
-- Moss infection for zombie, skeleton and creeper.
-- FMM model attachment and reattachment after `/fmm reload`.
-- Blockbench/FMM animations: `idle`, `walk`, `attack`, `attack_ranged`, `death` where present.
-- Skeleton bow model attached to the right arm.
-- Infected skeleton arrows are moved to the bow-hand position immediately after launch so they do not visually originate from the forehead.
-- Direct melee hits from infected mobs are rejected outside the configured combat range.
-- Sculk infection and Moss slow are custom effects implemented with PDC + scheduler; no Bukkit potion effects are required.
-- Effects work for both melee attacks and skeleton projectiles.
-- Sculk emergence keeps normal gravity/AI instead of lifting the mob into the air.
-- Creeper charge uses the custom `attack` animation while the vanilla creeper is ignited.
+1. Нарисуй модель в Blockbench, назови анимации `idle`, `walk`, `attack`, `death` (опционально: `spawn`, `attack_ranged`, `hurt`). Сохрани как `my_mob.bbmodel`.
+2. Положи файл в `plugins/FreeMinecraftModels/imports/` и выполни `/fmm reload`.
+3. Добавь блок в `plugins/InfectedMobs/config.yml` в секцию `mobs:` и выполни `/infectedmobs reload`:
 
-## Build
-
-Use Java 21 and Gradle 8.10.2+:
-
-```text
-gradle clean build
+```yaml
+mobs:
+  sculk_husk:
+    entity: HUSK              # любой живой моб: ZOMBIE, HUSK, DROWNED, STRAY, CAVE_SPIDER, PILLAGER, ...
+    infection: sculk          # sculk | moss
+    model: my_mob             # имя .bbmodel без расширения
+    attack-lock-ticks: 12     # длина анимации attack в тиках (20 = 1 сек)
 ```
 
-The GitHub Actions workflow installs Gradle 8.10.2 and builds `build/libs/InfectedMobs-*.jar`.
+Проверка: `/infectedmobs spawn sculk_husk`, затем `/infectedmobs info` рядом с мобом.
+Полный список настроек и комментарии — в самом `config.yml`.
 
-## Server installation
+## Анимации
 
-1. Install Paper 1.21.4+ and Java 21.
-2. Install FreeMinecraftModels 2.12.3 (or keep the dependency version matched to the installed FMM version).
-3. Put `InfectedMobs-*.jar` into `plugins/`.
-4. Put the `.bbmodel` files into the FMM import/model location used by your installed FMM version.
-5. Make sure players receive the FMM generated resource pack.
-6. Run `/fmm reload`.
-7. Run `/infectedmobs info` and test with `/infectedmobs spawn sculk_skeleton` or `/infectedmobs spawn sculk_creeper`.
+| Состояние | Имя в модели по умолчанию | Когда играет |
+|---|---|---|
+| idle | `idle` | цикл, пока моб стоит |
+| walk | `walk` | цикл, пока моб идёт |
+| attack | `attack` | один раз при ударе (у крипера — когда цель ближе `attack-trigger-range`) |
+| ranged-attack | `attack_ranged` / `ranged_attack` | один раз при выстреле любым снарядом |
+| hurt | `hurt` | один раз при получении урона (необязательно) |
+| spawn | `spawn` | один раз при появлении модели (необязательно) |
+| death | `death` | через FMM при смерти. **Имя менять нельзя** |
 
-## Sounds
+- Имя любой анимации можно переопределить в `animations:` у конкретного моба, можно списком: `attack: [attack, attack_melee]` — берётся первое существующее.
+- Отсутствующие анимации пропускаются: `walk` → `idle`, `attack_ranged` → `attack`. Предупреждение попадёт в консоль один раз.
+- `attack-lock-ticks` = длина анимации атаки в тиках. Пока она играет, idle/walk её не перебивают и повторные удары её не перезапускают.
+- idle/walk выбираются по реальному движению с гистерезисом, поэтому дёрганье не даёт мерцания.
 
-You do **not** need to add sound files for the current build. It uses vanilla Minecraft sounds such as sculk and moss block sounds. Custom `.ogg` sounds are only needed if you want unique infection/attack sounds. Those require adding the sound to the resource pack and registering/playing the custom namespaced sound.
+## Команды (право `infectedmobs.admin`)
 
-## Test commands
+| Команда | Что делает |
+|---|---|
+| `/infectedmobs list` | все мобы из конфига |
+| `/infectedmobs spawn <id>` | заспавнить моба перед собой |
+| `/infectedmobs info` | диагностика + какие анимации модели найдены у ближайшего моба |
+| `/infectedmobs anim <имя> [loop]` | проиграть любую анимацию модели на ближайшем заражённом мобе (удобно тестировать Blockbench) |
+| `/infectedmobs reload` | перечитать `config.yml` (новые мобы) и пересоздать модели |
 
-```text
-/infectedmobs spawn sculk_zombie
-/infectedmobs spawn sculk_skeleton
-/infectedmobs spawn sculk_spider
-/infectedmobs spawn sculk_creeper
-/infectedmobs spawn moss_zombie
-/infectedmobs spawn moss_skeleton
-/infectedmobs spawn moss_creeper
-/infectedmobs info
-```
+## Сборка (GitHub)
 
-## Important model note
+1. Залей папку в репозиторий GitHub.
+2. Вкладка **Actions → Build InfectedMobs** запустится сама при push (или вручную через *Run workflow*).
+3. Готовый `InfectedMobs-*.jar` лежит в **Artifacts** этого запуска.
 
-FMM's model is visual. The actual hitbox and AI remain the underlying Bukkit entity. Therefore the plugin also checks combat distance for direct melee attacks instead of relying on the apparent size of the custom model.
+Локально: `gradle clean build` (Java 21, Gradle 8.10+), jar в `build/libs/`.
 
-## Animation contract
+## Установка на сервер
 
-InfectedMobs uses FreeMinecraftModels `DynamicEntity` for every infected mob. The plugin reserves these animation names for every model:
+1. Paper 1.21.4+, Java 21, плагин FreeMinecraftModels (версия `2.12.3` в `build.gradle`; если у тебя другая — поменяй там и пересобери).
+2. `InfectedMobs-*.jar` → `plugins/`.
+3. `.bbmodel` → `plugins/FreeMinecraftModels/imports/`, затем `/fmm reload`. Ресурспак FMM соберёт и раздаст сам.
+4. В `fmm-models/` лежат две готовые тестовые модели (`sculk_infected_skeleton`, `sculk_infected_creeper`). Остальные модели из конфига делаешь сам; пока модели нет, моб заражён и работает, но выглядит ванильно (в консоли будет одно предупреждение, плагин повторяет попытку каждые 5 секунд).
 
-- `idle` — looping idle pose
-- `walk` — looping movement pose
-- `attack` — one-shot melee attack
-- `death` — one-shot death animation
-- `spawn` — optional one-shot spawn animation; FMM automatically falls back to `idle` when it is absent
+## Что исправлено в этой версии
 
-Skeletons may additionally use `attack_ranged`; InfectedMobs uses it for infected skeletons when configured.
+- Список мобов больше не зашит в код: любой `EntityType`, любая модель, свои имена анимаций.
+- Модель теперь цепляется и при естественном спавне (раньше моб в `CreatureSpawnEvent` ещё не был «valid», и модель не создавалась), после рестарта сервера и после выгрузки/загрузки чанка.
+- Единый контроллер анимаций: действия не перезапускаются поверх самих себя, нет мерцания idle/walk, у замороженного (AI off) моба нет walk.
+- Анимация `attack` у крипера теперь реально играет (по приближению к цели).
+- Взрыв крипера больше не отменяется проверкой дальности ближнего удара.
+- Выстрел любого заражённого моба со снарядом играет `attack_ranged`, а точка вылета снаряда настраивается через `projectile-origin`.
+- Плагин тикает только заражённых мобов (трекер), а не все сущности всех миров.
+- Модели чистятся при выгрузке/деспавне моба.
 
-FMM automatically switches `idle`/`walk` from the real Bukkit entity's horizontal movement. The plugin explicitly triggers attack and death. Death uses FMM's `removeWithDeathAnimation()` so the model is not deleted before the death animation can render.
+## Модель — это только визуал
 
-The exact animation names for each infected mob are in `src/main/resources/config.yml` under `animations:`. If a model is missing a required animation, InfectedMobs logs a warning naming the model, mob and missing animation.
-
-A `spawn` animation is **not required**.
-
-## Included test models
-
-The archive currently includes these two already-animated models under `fmm-models/`:
-
-- `sculk_infected_skeleton.bbmodel` — `idle`, `walk`, `attack`, `attack_ranged`, `death`
-- `sculk_infected_creeper.bbmodel` — `idle`, `walk`, `attack`, `death`
-
-The plugin is also configured for the other four IDs, but their `.bbmodel` files are intentionally not fabricated; put your real models into FMM's `imports/` directory using the exact IDs from `config.yml`.
-
-## Server test
-
-1. Install FreeMinecraftModels compatible with the FMM API version used by the build.
-2. Copy each `.bbmodel` into `plugins/FreeMinecraftModels/imports/`.
-3. Run `/fmm reload` and wait for the reload to finish.
-4. Install `InfectedMobs.jar` and restart the server.
-5. Test with `/infectedmobs spawn sculk_skeleton` or `/infectedmobs spawn sculk_creeper`.
-6. Walk the mob around: `idle`/`walk` are driven by the DynamicEntity backing mob. Attack: `attack` or configured `attack_ranged`. Death: `death` via FMM's death-removal path.
-
-### Animation/interactions fix
-
-The current animation controller explicitly stops the previous loop before starting `idle`, `walk`, `attack`, or `attack_ranged`. This avoids an FMM idle loop visually swallowing a one-shot animation. `spawn` is played automatically when present.
-
-Block interaction is only cancelled when an infected entity is actually between the player and the clicked block. A mob elsewhere in the player's view no longer disables normal mining.
+Хитбокс и ИИ остаются у ванильного моба, поэтому плагин дополнительно ограничивает реальную дальность ближних ударов (`combat.melee-effect-distance` или `melee-range` у моба).
